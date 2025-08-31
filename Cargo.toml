@@ -1,0 +1,39 @@
+[package]
+name = "fulgurance"
+version = "0.1.0"
+edition = "2024"
+authors = ["Steve Roques <steve.roques@gmail.com>"]
+license = "MIT"
+description = "A blazing-fast, adaptive prefetching and caching library for Rust"
+homepage = "https://github.com/roquess/fulgurance"
+repository = "https://github.com/roquess/fulgurance"
+readme = "README.md"
+keywords = ["cache", "prefetch", "performance", "lru", "adaptive"]
+categories = ["caching", "algorithms", "data-structures", "performance"]
+
+[dependencies]
+# Aucune dépendance runtime pour garder les abstractions zero-cost
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+rand = "0.8"
+
+[features]
+default = []
+
+[[bench]]
+name = "simple_lru"
+harness = false
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.bench]
+opt-level = 3
+lto = true
+codegen-units = 1
+debug = true
+
