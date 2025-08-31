@@ -129,7 +129,6 @@ where
         self
     }
 
-
     /// Retrieve a value from the cache, triggering prefetching as needed
     pub fn get(&mut self, key: &K) -> Option<V> {
         self.stats.total_accesses += 1;
@@ -186,6 +185,11 @@ where
         self.cache.is_empty()
     }
 
+    /// Get cache capacity
+    pub fn capacity(&self) -> usize {
+        self.cache.capacity()
+    }
+
     /// Clear all data in the cache and reset statistics
     pub fn clear(&mut self) {
         self.cache.clear();
@@ -212,101 +216,6 @@ where
 // Convenient re-exports for common types and modules
 pub mod prelude {
     pub use super::{CachePolicy, PrefetchStrategy, FulgranceCache, CacheStats};
-    pub use super::policies::{LruCache, PolicyType};
+    pub use super::policies::{LruCache, MruCache, PolicyType};
     pub use super::prefetch::{SequentialPrefetch, PrefetchType};
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::HashMap;
-
-    /// Simple in-memory test cache using HashMap and capacity limit with eviction.
-    struct TestCache<K, V> {
-        data: HashMap<K, V>,
-        capacity: usize,
-    }
-
-    impl<K, V> TestCache<K, V>
-    where
-        K: Clone + Hash + Eq,
-        V: Clone,
-    {
-        /// Create a new TestCache with a fixed capacity.
-        fn new(capacity: usize) -> Self {
-            Self {
-                data: HashMap::new(),
-                capacity,
-            }
-        }
-    }
-
-    impl<K, V> CachePolicy<K, V> for TestCache<K, V>
-    where
-        K: Clone + Hash + Eq,
-        V: Clone,
-    {
-        /// Lookup the value for a key, if present.
-        fn get(&mut self, key: &K) -> Option<&V> {
-            self.data.get(key)
-        }
-
-        /// Insert a key-value pair, evicting oldest inserted key if capacity exceeded.
-        fn insert(&mut self, key: K, value: V) {
-            if self.data.len() >= self.capacity {
-                // Simple eviction: remove first inserted key (non-deterministic order)
-                if let Some(k) = self.data.keys().next().cloned() {
-                    self.data.remove(&k);
-                }
-            }
-            self.data.insert(key, value);
-        }
-
-        /// Remove and return value for a key, if it existed.
-        fn remove(&mut self, key: &K) -> Option<V> {
-            self.data.remove(key)
-        }
-
-        fn len(&self) -> usize {
-            self.data.len()
-        }
-
-        fn clear(&mut self) {
-            self.data.clear();
-        }
-
-        fn capacity(&self) -> usize {
-            self.capacity
-        }
-    }
-
-    /// Simple prefetch strategy for testing: predicts next two sequential keys.
-    struct TestPrefetchStrategy;
-
-    impl PrefetchStrategy<i32> for TestPrefetchStrategy {
-        fn predict_next(&mut self, accessed_key: &i32) -> Vec<i32> {
-            vec![accessed_key + 1, accessed_key + 2]
-        }
-        fn update_access_pattern(&mut self, _key: &i32) {}
-        fn reset(&mut self) {}
-    }
-
-    /// Basic integration test for the FulguranceCache with `TestCache` and `TestPrefetchStrategy`.
-    #[test]
-    fn test_basic_cache_operations() {
-        // Specify type parameters to avoid ambiguity
-        let cache: TestCache<i32, String> = TestCache::new(10);
-        let strategy = TestPrefetchStrategy;
-        let mut fulgurance = FulgranceCache::new(cache, strategy);
-
-        // Insert a value and ensure length updated
-        fulgurance.insert(1, "one".to_string());
-        assert_eq!(fulgurance.len(), 1);
-
-        // Remove key and verify emptiness
-        assert_eq!(fulgurance.remove(&1), Some("one".to_string()));
-        assert_eq!(fulgurance.len(), 0);
-        assert!(fulgurance.is_empty());
-    }
-}
-

@@ -22,7 +22,11 @@ rand = "0.8"
 default = []
 
 [[bench]]
-name = "simple_lru"
+name = "lru"
+harness = false
+
+[[bench]]
+name = "mru"
 harness = false
 
 [profile.release]
