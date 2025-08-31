@@ -9,35 +9,36 @@ use crate::CachePolicy;
 
 pub mod lru;
 pub mod mru;
-// pub mod fifo; // Will be added later
-// pub mod lfu;  // Will be added later
+pub mod fifo;
+pub mod lfu;
+pub mod random;
 
-// Re-export all policy implementations
+// Re-export all available cache policies to make them accessible externally
 pub use lru::LruCache;
 pub use mru::MruCache;
-// pub use fifo::FifoCache;  // Will be uncommented when implemented
-// pub use lfu::LfuCache;    // Will be uncommented when implemented
+pub use fifo::FifoCache;
+pub use lfu::LfuCache;
+pub use random::RandomCache;
 
-/// Enumeration of available cache policy types
+/// Enum representing all supported cache policy types
 ///
-/// This enum allows dynamic selection of cache policies at runtime
-/// and facilitates easy switching between different strategies for benchmarking.
+/// Allows dynamic runtime selection and switching of cache policies for benchmarking and flexibility
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PolicyType {
-    /// Least Recently Used - evicts the item that was accessed longest ago
+    /// Least Recently Used - evicts the least recently accessed item
     Lru,
     /// Most Recently Used - evicts the most recently accessed item
     Mru,
-    /// First In, First Out - evicts items in the order they were added
+    /// First In, First Out - evicts items in insertion order
     Fifo,
-    /// Least Frequently Used - evicts the item with the lowest access count
+    /// Least Frequently Used - evicts items with lowest usage count
     Lfu,
-    /// Random - evicts a random item
+    /// Random Eviction - evicts a random item
     Random,
 }
 
 impl PolicyType {
-    /// Returns a human-readable name for the policy
+    /// Returns the user-friendly name of the cache policy
     pub fn name(&self) -> &'static str {
         match self {
             PolicyType::Lru => "LRU",
@@ -48,7 +49,7 @@ impl PolicyType {
         }
     }
 
-    /// Returns a description of the policy's behavior
+    /// Returns a short description of the eviction strategy used by the policy
     pub fn description(&self) -> &'static str {
         match self {
             PolicyType::Lru => "Evicts the least recently used item",
@@ -59,7 +60,7 @@ impl PolicyType {
         }
     }
 
-    /// Returns all available policy types
+    /// Returns a static list of all available policy types for iteration or display
     pub fn all() -> &'static [PolicyType] {
         &[
             PolicyType::Lru,
@@ -71,13 +72,13 @@ impl PolicyType {
     }
 }
 
-/// Factory function to create cache policies dynamically
+/// Factory function to create cache policies dynamically at runtime
 ///
-/// This function enables runtime selection of cache policies, which is
-/// particularly useful for benchmarking different strategies.
+/// This function enables flexible policy selection for various contexts,
+/// such as benchmarking or adaptive caching algorithms.
 pub fn create_cache_policy<K, V>(
     policy_type: PolicyType,
-    capacity: usize
+    capacity: usize,
 ) -> Box<dyn CachePolicy<K, V>>
 where
     K: Hash + Eq + Clone + Send + Sync + 'static,
@@ -86,44 +87,38 @@ where
     match policy_type {
         PolicyType::Lru => Box::new(LruCache::new(capacity)),
         PolicyType::Mru => Box::new(MruCache::new(capacity)),
-        PolicyType::Fifo => {
-            // TODO: Implement FIFO
-            unimplemented!("FIFO cache policy not yet implemented")
-        },
-        PolicyType::Lfu => {
-            // TODO: Implement LFU
-            unimplemented!("LFU cache policy not yet implemented")
-        },
-        PolicyType::Random => {
-            // TODO: Implement Random
-            unimplemented!("Random cache policy not yet implemented")
-        },
+        PolicyType::Fifo => Box::new(FifoCache::new(capacity)),
+        PolicyType::Lfu => Box::new(LfuCache::new(capacity)),
+        PolicyType::Random => Box::new(RandomCache::new(capacity)), // Instantiate Random cache here
     }
 }
 
-/// Trait for cache policies that support benchmarking
+/// Trait extension for cache policies supporting benchmarking functionality
 ///
-/// This trait extends the basic `CachePolicy` with additional methods
-/// needed for comprehensive benchmarking and performance analysis.
+/// Provides access to policy metadata, batch operation support,
+/// and performance characteristic reporting for benchmarking tools.
 pub trait BenchmarkablePolicy<K, V>: CachePolicy<K, V>
 where
     K: Hash + Eq + Clone,
     V: Clone,
 {
-    /// Returns the policy type identifier
+    /// Returns the enum identifying the policy type
     fn policy_type(&self) -> PolicyType;
 
-    /// Returns a name suitable for benchmark reports
+    /// Returns a standardized string identifier for benchmarking reports
     fn benchmark_name(&self) -> String {
         format!("{}_cap_{}", self.policy_type().name(), self.capacity())
     }
 
-    /// Resets internal state for consistent benchmarking
+    /// Resets the internal cache state for consistent benchmarking
     fn reset_for_benchmark(&mut self) {
         self.clear();
     }
 
-    /// Performs a batch of operations for benchmarking
+    /// Executes a batch of insert/get operations for benchmarking purposes
+    ///
+    /// `operations` is a slice of tuples where each tuple holds a key and an optional value.
+    /// If `Some(value)`, performs insert; if `None`, performs get.
     fn benchmark_operations(&mut self, operations: &[(K, Option<V>)]) {
         for (key, maybe_value) in operations {
             if let Some(value) = maybe_value {
@@ -134,7 +129,7 @@ where
         }
     }
 
-    /// Returns performance characteristics of this policy
+    /// Returns performance and behavior characteristics of the cache policy
     fn characteristics(&self) -> PolicyCharacteristics {
         match self.policy_type() {
             PolicyType::Lru => PolicyCharacteristics {
@@ -158,14 +153,20 @@ where
     }
 }
 
-/// Performance characteristics of a cache policy
+/// Struct representing performance characteristics of a cache policy
 #[derive(Debug, Clone)]
 pub struct PolicyCharacteristics {
+    /// Average time complexity of `get` operations
     pub avg_get_complexity: &'static str,
+    /// Average time complexity of `insert` operations
     pub avg_insert_complexity: &'static str,
+    /// Memory overhead classification (e.g. "High", "Low")
     pub memory_overhead: &'static str,
+    /// Whether the policy is cache-line friendly
     pub cache_friendly: bool,
+    /// Whether the policy benefits from temporal locality
     pub temporal_locality: bool,
+    /// Whether the policy benefits from spatial locality
     pub spatial_locality: bool,
 }
 
@@ -188,13 +189,15 @@ mod tests {
 
     #[test]
     fn test_policy_type_enum() {
-        // Test enum properties
+        // Verify policy names are correct strings
         assert_eq!(PolicyType::Lru.name(), "LRU");
         assert_eq!(PolicyType::Mru.name(), "MRU");
+
+        // Verify descriptions contain key phrases
         assert!(PolicyType::Lru.description().contains("least recently"));
         assert!(PolicyType::Mru.description().contains("most recently"));
-        
-        // Test all policies are listed
+
+        // Verify all policies exist in the policy list
         let all_policies = PolicyType::all();
         assert!(all_policies.contains(&PolicyType::Lru));
         assert!(all_policies.contains(&PolicyType::Mru));
@@ -202,18 +205,17 @@ mod tests {
 
     #[test]
     fn test_factory_pattern() {
-        // Test that factory creates correct types
+        // Create all policies and verify capacity correctness
         let lru_cache = create_cache_policy::<i32, String>(PolicyType::Lru, 100);
         let mru_cache = create_cache_policy::<i32, String>(PolicyType::Mru, 50);
-        
+        let fifo_cache = create_cache_policy::<i32, String>(PolicyType::Fifo, 30);
+        let lfu_cache = create_cache_policy::<i32, String>(PolicyType::Lfu, 20);
+        let random_cache = create_cache_policy::<i32, String>(PolicyType::Random, 10);
         assert_eq!(lru_cache.capacity(), 100);
         assert_eq!(mru_cache.capacity(), 50);
-    }
-
-    #[test]
-    #[should_panic(expected = "not yet implemented")]
-    fn test_unimplemented_policies() {
-        // Test that unimplemented policies panic appropriately
-        let _cache = create_cache_policy::<i32, String>(PolicyType::Fifo, 100);
+        assert_eq!(fifo_cache.capacity(), 30);
+        assert_eq!(lfu_cache.capacity(), 20);
+        assert_eq!(random_cache.capacity(), 10);
     }
 }
+

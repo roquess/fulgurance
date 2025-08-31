@@ -12,7 +12,7 @@ keywords = ["cache", "prefetch", "performance", "lru", "adaptive"]
 categories = ["caching", "algorithms", "data-structures", "performance"]
 
 [dependencies]
-# Aucune dépendance runtime pour garder les abstractions zero-cost
+rand = "0.8"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -27,6 +27,18 @@ harness = false
 
 [[bench]]
 name = "mru"
+harness = false
+
+[[bench]]
+name = "lfu"
+harness = false
+
+[[bench]]
+name = "fifo"
+harness = false
+
+[[bench]]
+name = "random"
 harness = false
 
 [profile.release]
