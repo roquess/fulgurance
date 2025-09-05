@@ -9,7 +9,7 @@ homepage = "https://github.com/roquess/fulgurance"
 repository = "https://github.com/roquess/fulgurance"
 readme = "README.md"
 keywords = ["cache", "prefetch", "performance", "lru", "adaptive"]
-categories = ["caching", "algorithms", "data-structures", "performance"]
+categories = ["caching", "algorithms", "data-structures"]
 
 [dependencies]
 rand = "0.8"
