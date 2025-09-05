@@ -1,7 +1,7 @@
 use crate::PrefetchStrategy;
+
 pub mod sequential;
 pub mod markov;
-
 pub use sequential::SequentialPrefetch;
 pub use markov::MarkovPrefetch;
 
@@ -21,7 +21,7 @@ impl PrefetchType {
             PrefetchType::None => "None",
         }
     }
-    
+
     pub fn description(&self) -> &'static str {
         match self {
             PrefetchType::Sequential => "Predicts sequential access patterns",
@@ -29,13 +29,9 @@ impl PrefetchType {
             PrefetchType::None => "No prefetching - baseline strategy",
         }
     }
-    
+
     pub fn all() -> &'static [PrefetchType] {
-        &[
-            PrefetchType::Sequential,
-            PrefetchType::Markov,
-            PrefetchType::None,
-        ]
+        &[PrefetchType::Sequential, PrefetchType::Markov, PrefetchType::None]
     }
 }
 
@@ -47,20 +43,14 @@ impl<K> PrefetchStrategy<K> for NoPrefetch {
     fn predict_next(&mut self, _accessed_key: &K) -> Vec<K> {
         Vec::new()
     }
-    
-    fn update_access_pattern(&mut self, _key: &K) {
-        // No-op
-    }
-    
-    fn reset(&mut self) {
-        // No-op
-    }
+
+    fn update_access_pattern(&mut self, _key: &K) {}
+
+    fn reset(&mut self) {}
 }
 
 /// Factory function to create prefetch strategies dynamically
-pub fn create_prefetch_strategy_i32(
-    prefetch_type: PrefetchType
-) -> Box<dyn PrefetchStrategy<i32>> {
+pub fn create_prefetch_strategy_i32(prefetch_type: PrefetchType) -> Box<dyn PrefetchStrategy<i32>> {
     match prefetch_type {
         PrefetchType::Sequential => Box::new(SequentialPrefetch::<i32>::new()),
         PrefetchType::Markov => Box::new(MarkovPrefetch::<i32>::new()),
@@ -68,9 +58,7 @@ pub fn create_prefetch_strategy_i32(
     }
 }
 
-pub fn create_prefetch_strategy_i64(
-    prefetch_type: PrefetchType
-) -> Box<dyn PrefetchStrategy<i64>> {
+pub fn create_prefetch_strategy_i64(prefetch_type: PrefetchType) -> Box<dyn PrefetchStrategy<i64>> {
     match prefetch_type {
         PrefetchType::Sequential => Box::new(SequentialPrefetch::<i64>::new()),
         PrefetchType::Markov => Box::new(MarkovPrefetch::<i64>::new()),
@@ -78,9 +66,7 @@ pub fn create_prefetch_strategy_i64(
     }
 }
 
-pub fn create_prefetch_strategy_usize(
-    prefetch_type: PrefetchType
-) -> Box<dyn PrefetchStrategy<usize>> {
+pub fn create_prefetch_strategy_usize(prefetch_type: PrefetchType) -> Box<dyn PrefetchStrategy<usize>> {
     match prefetch_type {
         PrefetchType::Sequential => Box::new(SequentialPrefetch::<usize>::new()),
         PrefetchType::Markov => Box::new(MarkovPrefetch::<usize>::new()),
@@ -94,11 +80,11 @@ where
     K: Clone,
 {
     fn prefetch_type(&self) -> PrefetchType;
-    
+
     fn benchmark_name(&self) -> String {
         format!("{}_prefetch", self.prefetch_type().name())
     }
-    
+
     fn characteristics(&self) -> PrefetchCharacteristics {
         match self.prefetch_type() {
             PrefetchType::Sequential => PrefetchCharacteristics {
@@ -168,18 +154,17 @@ impl Default for PrefetchCharacteristics {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_prefetch_type_properties() {
         assert_eq!(PrefetchType::Sequential.name(), "Sequential");
         assert_eq!(PrefetchType::Markov.name(), "Markov");
         assert_eq!(PrefetchType::None.name(), "None");
-        
         assert!(PrefetchType::Sequential.description().contains("sequential"));
         assert!(PrefetchType::Markov.description().contains("Markov"));
         assert!(PrefetchType::None.description().contains("baseline"));
     }
-    
+
     #[test]
     fn test_all_prefetch_types_listed() {
         let all_types = PrefetchType::all();
@@ -188,59 +173,56 @@ mod tests {
         assert!(all_types.contains(&PrefetchType::None));
         assert_eq!(all_types.len(), 3);
     }
-    
+
     #[test]
     fn test_no_prefetch_strategy() {
         let mut strategy = NoPrefetch;
         strategy.update_access_pattern(&42);
         assert!(strategy.predict_next(&42).is_empty());
-        
-        // Test reset with explicit type annotation
         <NoPrefetch as PrefetchStrategy<i32>>::reset(&mut strategy);
     }
-    
+
     #[test]
     fn test_factory_creation() {
         let _sequential_i32 = create_prefetch_strategy_i32(PrefetchType::Sequential);
         let _markov_i32 = create_prefetch_strategy_i32(PrefetchType::Markov);
         let _none_i32 = create_prefetch_strategy_i32(PrefetchType::None);
-        
         let _sequential_i64 = create_prefetch_strategy_i64(PrefetchType::Sequential);
         let _markov_i64 = create_prefetch_strategy_i64(PrefetchType::Markov);
         let _none_i64 = create_prefetch_strategy_i64(PrefetchType::None);
-        
         let _sequential_usize = create_prefetch_strategy_usize(PrefetchType::Sequential);
         let _markov_usize = create_prefetch_strategy_usize(PrefetchType::Markov);
         let _none_usize = create_prefetch_strategy_usize(PrefetchType::None);
     }
-    
+
     #[test]
     fn test_benchmark_characteristics() {
         let sequential = SequentialPrefetch::<i32>::new();
         let markov = MarkovPrefetch::<i32>::new();
         let none = NoPrefetch;
-        
+
         let seq_chars = sequential.characteristics();
         assert_eq!(seq_chars.adaptability, "Low");
         assert_eq!(seq_chars.cpu_overhead, "Very Low");
-        
+
         let markov_chars = markov.characteristics();
         assert_eq!(markov_chars.adaptability, "High");
         assert_eq!(markov_chars.cpu_overhead, "Medium");
-        
-        let none_chars = none.characteristics();
+
+        let none_chars = <NoPrefetch as BenchmarkablePrefetch<i32>>::characteristics(&none);
         assert_eq!(none_chars.prediction_accuracy, "N/A");
         assert_eq!(none_chars.memory_overhead, "None");
     }
-    
+
     #[test]
     fn test_benchmark_names() {
         let sequential = SequentialPrefetch::<i32>::new();
         let markov = MarkovPrefetch::<i32>::new();
         let none = NoPrefetch;
-        
+
         assert_eq!(sequential.benchmark_name(), "Sequential_prefetch");
         assert_eq!(markov.benchmark_name(), "Markov_prefetch");
-        assert_eq!(none.benchmark_name(), "None_prefetch");
+        assert_eq!(<NoPrefetch as BenchmarkablePrefetch<i32>>::benchmark_name(&none), "None_prefetch");
     }
+
 }
