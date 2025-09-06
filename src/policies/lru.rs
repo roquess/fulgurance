@@ -11,7 +11,7 @@ use super::{BenchmarkablePolicy, PolicyType};
 /// This cache maintains items in order of access, automatically evicting
 /// the least recently used items when capacity is exceeded. It provides
 /// O(1) average case performance for get, insert, and remove operations.
-/// 
+///
 /// The cache integrates with prefetch strategies to predict and preload
 /// likely future accesses, improving performance for predictable access patterns.
 pub struct LruCache<K, V>
@@ -117,7 +117,7 @@ where
     /// # Panics
     /// Panics if capacity is 0
     pub fn with_custom_prefetch(
-        capacity: usize, 
+        capacity: usize,
         prefetch_strategy: Box<dyn PrefetchStrategy<K>>
     ) -> Self {
         assert!(capacity > 0, "LRU cache capacity must be greater than 0");
@@ -176,21 +176,21 @@ where
 
         // Get predictions from the strategy
         let predictions = self.prefetch_strategy.predict_next(accessed_key);
-        
+
         for predicted_key in predictions {
             self.prefetch_stats.predictions_made += 1;
-            
+
             // Only prefetch if the key is not already in main cache or prefetch buffer
-            if !self.map.contains_key(&predicted_key) && 
+            if !self.map.contains_key(&predicted_key) &&
                !self.prefetch_buffer.contains_key(&predicted_key) {
-                
+
                 // Here you would typically load the value from your data source
                 // For now, we'll simulate with a placeholder
                 // In a real implementation, this would be:
                 // if let Some(value) = self.load_from_source(&predicted_key) {
                 //     self.prefetch_buffer.insert(predicted_key, value);
                 // }
-                
+
                 // For demonstration, we'll skip actual prefetch loading
                 // but track the prediction
             }
@@ -300,16 +300,8 @@ where
 impl LruCache<i32, String> {
     /// Creates a new i32 LRU cache with specified prefetch strategy
     pub fn with_prefetch_i32(capacity: usize, prefetch_type: PrefetchType) -> Self {
-        use crate::prefetch::{SequentialPrefetch, MarkovPrefetch};
-        
         assert!(capacity > 0, "LRU cache capacity must be greater than 0");
-
-        let prefetch_strategy: Box<dyn PrefetchStrategy<i32>> = match prefetch_type {
-            PrefetchType::Sequential => Box::new(SequentialPrefetch::<i32>::new()),
-            PrefetchType::Markov => Box::new(MarkovPrefetch::<i32>::new()),
-            PrefetchType::None => Box::new(NoPrefetch),
-        };
-
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_i32(prefetch_type);
         Self::with_custom_prefetch(capacity, prefetch_strategy)
     }
 }
@@ -317,16 +309,8 @@ impl LruCache<i32, String> {
 impl LruCache<i64, String> {
     /// Creates a new i64 LRU cache with specified prefetch strategy
     pub fn with_prefetch_i64(capacity: usize, prefetch_type: PrefetchType) -> Self {
-        use crate::prefetch::{SequentialPrefetch, MarkovPrefetch};
-        
         assert!(capacity > 0, "LRU cache capacity must be greater than 0");
-
-        let prefetch_strategy: Box<dyn PrefetchStrategy<i64>> = match prefetch_type {
-            PrefetchType::Sequential => Box::new(SequentialPrefetch::<i64>::new()),
-            PrefetchType::Markov => Box::new(MarkovPrefetch::<i64>::new()),
-            PrefetchType::None => Box::new(NoPrefetch),
-        };
-
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_i64(prefetch_type);
         Self::with_custom_prefetch(capacity, prefetch_strategy)
     }
 }
@@ -334,16 +318,8 @@ impl LruCache<i64, String> {
 impl LruCache<usize, String> {
     /// Creates a new usize LRU cache with specified prefetch strategy
     pub fn with_prefetch_usize(capacity: usize, prefetch_type: PrefetchType) -> Self {
-        use crate::prefetch::{SequentialPrefetch, MarkovPrefetch};
-        
         assert!(capacity > 0, "LRU cache capacity must be greater than 0");
-
-        let prefetch_strategy: Box<dyn PrefetchStrategy<usize>> = match prefetch_type {
-            PrefetchType::Sequential => Box::new(SequentialPrefetch::<usize>::new()),
-            PrefetchType::Markov => Box::new(MarkovPrefetch::<usize>::new()),
-            PrefetchType::None => Box::new(NoPrefetch),
-        };
-
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_usize(prefetch_type);
         Self::with_custom_prefetch(capacity, prefetch_strategy)
     }
 }
@@ -373,10 +349,10 @@ where
             unsafe {
                 // Move to front (mark as recently used)
                 self.move_to_front(node_ptr);
-                
+
                 // Perform prefetch predictions
                 self.perform_prefetch(key);
-                
+
                 Some(&node_ptr.as_ref().value)
             }
         } else {

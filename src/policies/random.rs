@@ -2,14 +2,15 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use rand::{thread_rng, Rng};
 use crate::{CachePolicy, PrefetchStrategy};
-use crate::prefetch::NoPrefetch;
+use crate::prefetch::{PrefetchType, NoPrefetch};
+use super::{BenchmarkablePolicy, PolicyType};
 
 /// A cache policy that randomly evicts entries when the cache reaches its capacity.
-/// 
+///
 /// This cache stores values in a HashMap for fast lookup, and when an insertion would cause
 /// the cache to exceed its maximum size, a random key is evicted to make space.
-/// 
-/// Additionally, this cache supports prefetch strategies similar to FIFO cache,
+///
+/// Additionally, this cache supports prefetch strategies similar to other cache types,
 /// using a prefetch buffer and tracking prefetch statistics to predict and proactively
 /// load potential next keys.
 pub struct RandomCache<K, V>
@@ -174,6 +175,34 @@ where
     }
 }
 
+// Specialized constructors for supported key types
+impl RandomCache<i32, String> {
+    /// Creates a new i32 Random cache with specified prefetch strategy
+    pub fn with_prefetch_i32(capacity: usize, prefetch_type: PrefetchType) -> Self {
+        assert!(capacity > 0, "Random cache capacity must be greater than 0");
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_i32(prefetch_type);
+        Self::with_custom_prefetch(capacity, prefetch_strategy)
+    }
+}
+
+impl RandomCache<i64, String> {
+    /// Creates a new i64 Random cache with specified prefetch strategy
+    pub fn with_prefetch_i64(capacity: usize, prefetch_type: PrefetchType) -> Self {
+        assert!(capacity > 0, "Random cache capacity must be greater than 0");
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_i64(prefetch_type);
+        Self::with_custom_prefetch(capacity, prefetch_strategy)
+    }
+}
+
+impl RandomCache<usize, String> {
+    /// Creates a new usize Random cache with specified prefetch strategy
+    pub fn with_prefetch_usize(capacity: usize, prefetch_type: PrefetchType) -> Self {
+        assert!(capacity > 0, "Random cache capacity must be greater than 0");
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_usize(prefetch_type);
+        Self::with_custom_prefetch(capacity, prefetch_strategy)
+    }
+}
+
 impl<K, V> CachePolicy<K, V> for RandomCache<K, V>
 where
     K: Hash + Eq + Clone,
@@ -237,6 +266,28 @@ where
     /// Return the configured capacity of the cache.
     fn capacity(&self) -> usize {
         self.capacity
+    }
+}
+
+impl<K, V> BenchmarkablePolicy<K, V> for RandomCache<K, V>
+where
+    K: Hash + Eq + Clone,
+    V: Clone,
+{
+    /// Returns the policy type for this cache
+    fn policy_type(&self) -> PolicyType {
+        PolicyType::Random
+    }
+
+    /// Returns a standardized string identifier for benchmarking reports
+    fn benchmark_name(&self) -> String {
+        format!("{}_cap_{}_prefetch", self.policy_type().name(), self.capacity())
+    }
+
+    /// Resets the internal cache state for consistent benchmarking
+    fn reset_for_benchmark(&mut self) {
+        self.clear();
+        self.reset_prefetch_stats();
     }
 }
 
@@ -336,4 +387,3 @@ mod tests {
         RandomCache::<i32, String>::new(0);
     }
 }
-

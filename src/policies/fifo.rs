@@ -152,7 +152,7 @@ where
         for predicted_key in predictions {
             self.prefetch_stats.predictions_made += 1;
 
-            // Only store prediction if it’s not already in cache or buffer
+            // Only store prediction if it's not already in cache or buffer
             if !self.map.contains_key(&predicted_key)
                 && !self.prefetch_buffer.contains_key(&predicted_key) {
                 // In a real cache, value would be loaded from storage/datasource
@@ -179,39 +179,24 @@ where
 // Specialized constructors for supported key types
 impl FifoCache<i32, String> {
     pub fn with_prefetch_i32(capacity: usize, prefetch_type: PrefetchType) -> Self {
-        use crate::prefetch::{SequentialPrefetch, MarkovPrefetch};
         assert!(capacity > 0, "FIFO cache capacity must be greater than 0");
-        let prefetch_strategy: Box<dyn PrefetchStrategy<i32>> = match prefetch_type {
-            PrefetchType::Sequential => Box::new(SequentialPrefetch::<i32>::new()),
-            PrefetchType::Markov => Box::new(MarkovPrefetch::<i32>::new()),
-            PrefetchType::None => Box::new(NoPrefetch),
-        };
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_i32(prefetch_type);
         Self::with_custom_prefetch(capacity, prefetch_strategy)
     }
 }
 
 impl FifoCache<i64, String> {
     pub fn with_prefetch_i64(capacity: usize, prefetch_type: PrefetchType) -> Self {
-        use crate::prefetch::{SequentialPrefetch, MarkovPrefetch};
         assert!(capacity > 0, "FIFO cache capacity must be greater than 0");
-        let prefetch_strategy: Box<dyn PrefetchStrategy<i64>> = match prefetch_type {
-            PrefetchType::Sequential => Box::new(SequentialPrefetch::<i64>::new()),
-            PrefetchType::Markov => Box::new(MarkovPrefetch::<i64>::new()),
-            PrefetchType::None => Box::new(NoPrefetch),
-        };
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_i64(prefetch_type);
         Self::with_custom_prefetch(capacity, prefetch_strategy)
     }
 }
 
 impl FifoCache<usize, String> {
     pub fn with_prefetch_usize(capacity: usize, prefetch_type: PrefetchType) -> Self {
-        use crate::prefetch::{SequentialPrefetch, MarkovPrefetch};
         assert!(capacity > 0, "FIFO cache capacity must be greater than 0");
-        let prefetch_strategy: Box<dyn PrefetchStrategy<usize>> = match prefetch_type {
-            PrefetchType::Sequential => Box::new(SequentialPrefetch::<usize>::new()),
-            PrefetchType::Markov => Box::new(MarkovPrefetch::<usize>::new()),
-            PrefetchType::None => Box::new(NoPrefetch),
-        };
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_usize(prefetch_type);
         Self::with_custom_prefetch(capacity, prefetch_strategy)
     }
 }

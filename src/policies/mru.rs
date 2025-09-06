@@ -302,16 +302,8 @@ where
 impl MruCache<i32, String> {
     /// Creates a new i32 MRU cache with specified prefetch strategy
     pub fn with_prefetch_i32(capacity: usize, prefetch_type: PrefetchType) -> Self {
-        use crate::prefetch::{SequentialPrefetch, MarkovPrefetch};
-
         assert!(capacity > 0, "MRU cache capacity must be greater than 0");
-
-        let prefetch_strategy: Box<dyn PrefetchStrategy<i32>> = match prefetch_type {
-            PrefetchType::Sequential => Box::new(SequentialPrefetch::<i32>::new()),
-            PrefetchType::Markov => Box::new(MarkovPrefetch::<i32>::new()),
-            PrefetchType::None => Box::new(NoPrefetch),
-        };
-
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_i32(prefetch_type);
         Self::with_custom_prefetch(capacity, prefetch_strategy)
     }
 }
@@ -319,16 +311,8 @@ impl MruCache<i32, String> {
 impl MruCache<i64, String> {
     /// Creates a new i64 MRU cache with specified prefetch strategy
     pub fn with_prefetch_i64(capacity: usize, prefetch_type: PrefetchType) -> Self {
-        use crate::prefetch::{SequentialPrefetch, MarkovPrefetch};
-
         assert!(capacity > 0, "MRU cache capacity must be greater than 0");
-
-        let prefetch_strategy: Box<dyn PrefetchStrategy<i64>> = match prefetch_type {
-            PrefetchType::Sequential => Box::new(SequentialPrefetch::<i64>::new()),
-            PrefetchType::Markov => Box::new(MarkovPrefetch::<i64>::new()),
-            PrefetchType::None => Box::new(NoPrefetch),
-        };
-
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_i64(prefetch_type);
         Self::with_custom_prefetch(capacity, prefetch_strategy)
     }
 }
@@ -336,16 +320,8 @@ impl MruCache<i64, String> {
 impl MruCache<usize, String> {
     /// Creates a new usize MRU cache with specified prefetch strategy
     pub fn with_prefetch_usize(capacity: usize, prefetch_type: PrefetchType) -> Self {
-        use crate::prefetch::{SequentialPrefetch, MarkovPrefetch};
-
         assert!(capacity > 0, "MRU cache capacity must be greater than 0");
-
-        let prefetch_strategy: Box<dyn PrefetchStrategy<usize>> = match prefetch_type {
-            PrefetchType::Sequential => Box::new(SequentialPrefetch::<usize>::new()),
-            PrefetchType::Markov => Box::new(MarkovPrefetch::<usize>::new()),
-            PrefetchType::None => Box::new(NoPrefetch),
-        };
-
+        let prefetch_strategy = crate::prefetch::create_prefetch_strategy_usize(prefetch_type);
         Self::with_custom_prefetch(capacity, prefetch_strategy)
     }
 }
@@ -520,3 +496,4 @@ where
     V: Clone + Sync,
 {
 }
+
