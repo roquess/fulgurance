@@ -38,6 +38,8 @@ using an **80/20 working set pattern** and a **cache size of 300**.
 | **Markov**        | 288.22         | 18.98          | 286.03     |
 | **Adaptive**      | 667.24         | 21.93          | 667.21     |
 
+![LRU Sequential Benchmark](https://github.com/roquess/fulgurance/blob/main/lruseq.png?raw=true)
+
 ## Benchmark Environment
 
 All benchmarks were executed on the following system:
