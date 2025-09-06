@@ -20,7 +20,7 @@ Add Fulgurance to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-fulgurance = "0.2.0"
+fulgurance = "0.3.0"
 ```
 
 ---
