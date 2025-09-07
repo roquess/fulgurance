@@ -14,17 +14,6 @@ Fulgurance optimizes memory and disk accesses by predicting and prefetching data
 
 ---
 
-## Installation
-
-Add Fulgurance to your `Cargo.toml`:
-
-```toml
-[dependencies]
-fulgurance = "0.3.0"
-```
-
----
-
 ## Benchmark Results
 
 The following results compare different **prefetching strategies** combined with an **LRU cache policy**,  
