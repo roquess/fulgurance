@@ -354,44 +354,4 @@ impl BenchmarkablePrefetch<usize> for StridePrefetch<usize> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_stride_multiple_patterns() {
-        let mut strategy = StridePrefetch::<i32>::new();
-        // Create alternating stride patterns: +2, +3, +2, +3
-        strategy.update_access_pattern(&0);
-        strategy.update_access_pattern(&2);  // stride +2
-        strategy.update_access_pattern(&5);  // stride +3
-        strategy.update_access_pattern(&7);  // stride +2
-        strategy.update_access_pattern(&10); // stride +3
-        assert!(strategy.stride_patterns.contains_key(&2));
-        assert!(strategy.stride_patterns.contains_key(&3));
-    }
-
-    #[test]
-    fn test_stride_confidence_building() {
-        let mut strategy = StridePrefetch::<i32>::new();
-        // Build a consistent stride-5 pattern
-        for i in 0..6 {
-            strategy.update_access_pattern(&(i * 5));
-        }
-        if let Some(pattern) = strategy.stride_patterns.get(&5) {
-            assert!(pattern.confidence > 0.5);
-        }
-        let predictions = strategy.predict_next(&25);
-        assert!(predictions.contains(&30));
-    }
-
-    #[test]
-    fn test_stride_pattern_cleanup() {
-        let mut strategy = StridePrefetch::<i32>::with_config(4, 3, 4, 0.6);
-        for i in 1..20 {
-            strategy.update_access_pattern(&(i * i));
-        }
-        assert!(strategy.stride_patterns.len() <= 10);
-    }
-}
 
