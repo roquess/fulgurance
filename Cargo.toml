@@ -41,6 +41,26 @@ harness = false
 name = "random"
 harness = false
 
+[[bench]]
+name = "arc"
+harness = false
+
+[[bench]]
+name = "car"
+harness = false
+
+[[bench]]
+name = "clock"
+harness = false
+
+[[bench]]
+name = "slru"
+harness = false
+
+[[bench]]
+name = "two_q"
+harness = false
+
 [profile.release]
 opt-level = 3
 lto = true
