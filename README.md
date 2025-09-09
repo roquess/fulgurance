@@ -3,6 +3,8 @@
 A blazing-fast, adaptive **prefetching and caching library for Rust**.
 Fulgurance optimizes memory and disk accesses by predicting and prefetching data before it’s needed, reducing latency and improving performance for **databases, distributed systems, and high-performance applications**.
 
+[![crates.io](https://img.shields.io/crates/v/fulgurance)](https://crates.io/crates/fulgurance)
+
 ---
 
 ## Features
